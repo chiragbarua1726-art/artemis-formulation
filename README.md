@@ -1,4 +1,4 @@
-# DermaAegis — Dermatology Field Sales Intelligence & Reporting System
+# Artemis — Dermatology Field Sales Intelligence & Reporting System
 
 > Exclusively tailored for **Dermatologists, Cosmetologists, Trichologists & Aesthetic Skin Clinics**, built with modern SaaS design inspired by **Keyvo** and **Flexitee**.
 
