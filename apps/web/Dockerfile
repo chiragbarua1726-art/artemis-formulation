@@ -15,7 +15,9 @@ RUN npm run build --workspace=apps/web
 
 FROM nginx:1.27-alpine
 
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+ENV API_UPSTREAM=http://api:5001
+
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 
 EXPOSE 80

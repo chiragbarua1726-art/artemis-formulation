@@ -120,4 +120,9 @@ docker compose down
 
 `docker compose down` preserves the database volume. To permanently remove
 production data, use `docker compose down -v` only after taking a backup.
+
+When deploying the frontend and API as separate Render services, set
+`API_UPSTREAM` on the frontend service to the API's public URL, for example
+`https://artemis-api.onrender.com`. The frontend proxy uses this value for
+`/api` requests.
 # artemis
