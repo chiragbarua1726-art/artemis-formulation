@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const tourPlans_controller_1 = require("./tourPlans.controller");
+const auth_1 = require("../../middleware/auth");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.post('/', tourPlans_controller_1.createTourPlan);
+router.get('/me', tourPlans_controller_1.getMyTourPlans);
+router.get('/', (0, auth_1.requireRole)(['ADMIN', 'MANAGER']), tourPlans_controller_1.getAllTourPlans);
+router.patch('/:id/approve', (0, auth_1.requireRole)(['ADMIN', 'MANAGER']), tourPlans_controller_1.approveTourPlan);
+router.patch('/:id/reject', (0, auth_1.requireRole)(['ADMIN', 'MANAGER']), tourPlans_controller_1.rejectTourPlan);
+exports.default = router;

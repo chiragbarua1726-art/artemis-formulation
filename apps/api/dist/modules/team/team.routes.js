@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const team_controller_1 = require("./team.controller");
+const auth_1 = require("../../middleware/auth");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.use((0, auth_1.requireRole)(['ADMIN', 'MANAGER']));
+router.get('/', team_controller_1.getTeamTracker);
+router.get('/mr/:id', team_controller_1.getMrDetail);
+exports.default = router;
