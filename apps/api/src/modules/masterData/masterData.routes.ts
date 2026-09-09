@@ -19,7 +19,7 @@ router.use(authenticate);
 
 // Doctors: Accessible for selection by all authenticated users; mutating is Admin only
 router.get('/doctors', getDoctors);
-router.post('/doctors', requireRole(['ADMIN']), createDoctor);
+router.post('/doctors', requireRole(['ADMIN', 'MANAGER', 'MR']), createDoctor);
 router.put('/doctors/:id', requireRole(['ADMIN']), updateDoctor);
 router.delete('/doctors/:id', requireRole(['ADMIN']), deleteDoctor);
 

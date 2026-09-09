@@ -6,6 +6,8 @@ import { ToastContainer } from './components/ui/Toast';
 
 // Auth
 import { LoginView } from './features/auth/LoginView';
+import { LandingPage } from './features/landing/LandingPage';
+import { EmailVerificationView } from './features/auth/EmailVerificationView';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 
 // MR Field App
@@ -13,7 +15,6 @@ import { MrLayout } from './components/layout/MrLayout';
 import { TodayPlan } from './features/mr/TodayPlan';
 import { DcrReportForm } from './features/mr/DcrReportForm';
 import { TourPlanBuilder } from './features/mr/TourPlanBuilder';
-import { ExpenseClaimForm } from './features/mr/ExpenseClaimForm';
 import { PerformanceView } from './features/mr/PerformanceView';
 
 // Manager / Admin Dashboard
@@ -35,21 +36,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Smart Root Redirect based on user role
-const RootRedirect: React.FC = () => {
-  const { user, isAuthenticated } = useAuthStore();
-
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user.role === 'MR') {
-    return <Navigate to="/mr/today" replace />;
-  }
-
-  return <Navigate to="/manager/overview" replace />;
-};
-
 export const App: React.FC = () => {
   const checkAuth = useAuthStore((state) => state.checkAuth);
 
@@ -62,10 +48,12 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <Routes>
           {/* Public Auth */}
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<LoginView />} />
+          <Route path="/verify-email" element={<EmailVerificationView />} />
 
-          {/* Root Redirect */}
-          <Route path="/" element={<RootRedirect />} />
+          {/* Public landing page is always the default entry point */}
+          <Route path="/" element={<LandingPage />} />
 
           {/* MR Field App Routes (Accessible to MR, and also Manager/Admin for preview) */}
           <Route element={<ProtectedRoute />}>
@@ -74,7 +62,6 @@ export const App: React.FC = () => {
               <Route path="today" element={<TodayPlan />} />
               <Route path="dcr" element={<DcrReportForm />} />
               <Route path="tour-plan" element={<TourPlanBuilder />} />
-              <Route path="expenses" element={<ExpenseClaimForm />} />
               <Route path="performance" element={<PerformanceView />} />
             </Route>
           </Route>
@@ -93,7 +80,7 @@ export const App: React.FC = () => {
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/landing" replace />} />
         </Routes>
 
         <ToastContainer />

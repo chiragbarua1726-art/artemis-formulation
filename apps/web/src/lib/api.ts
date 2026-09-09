@@ -10,30 +10,18 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest<T = any>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('aegis_access_token');
-
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401) {
-    // If unauthorized and we had a refresh token, attempt refresh
     const refreshToken = localStorage.getItem('aegis_refresh_token');
     if (refreshToken && !endpoint.includes('/auth/refresh') && !endpoint.includes('/auth/login')) {
       try {
@@ -42,14 +30,11 @@ export async function apiRequest<T = any>(
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken }),
         });
-
         if (refreshRes.ok) {
           const data = await refreshRes.json();
           localStorage.setItem('aegis_access_token', data.accessToken);
           localStorage.setItem('aegis_refresh_token', data.refreshToken);
-
-          // Retry original request with new token
-          headers['Authorization'] = `Bearer ${data.accessToken}`;
+          headers.Authorization = `Bearer ${data.accessToken}`;
           const retryRes = await fetch(url, { ...options, headers });
           if (!retryRes.ok) {
             const errData = await retryRes.json().catch(() => ({}));
@@ -57,8 +42,7 @@ export async function apiRequest<T = any>(
           }
           return retryRes.json();
         }
-      } catch (err) {
-        // Refresh failed, clean up
+      } catch {
         localStorage.removeItem('aegis_access_token');
         localStorage.removeItem('aegis_refresh_token');
         localStorage.removeItem('aegis_user');
@@ -71,6 +55,5 @@ export async function apiRequest<T = any>(
     const errData = await response.json().catch(() => ({}));
     throw new ApiError(errData.error || `HTTP error ${response.status}`, response.status, errData);
   }
-
   return response.json();
 }

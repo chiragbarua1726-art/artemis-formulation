@@ -12,6 +12,7 @@ export interface Doctor {
   name: string;
   specialty: string;
   hospitalName: string;
+  headquarters?: string | null;
   address: string;
   latitude?: number | null;
   longitude?: number | null;
@@ -135,6 +136,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
               <span className="truncate">{doctor.hospitalName}</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5 truncate">{doctor.address}</p>
+            <p className="text-[11px] text-blue-700 font-semibold mt-0.5">HQ: {doctor.headquarters || 'Not set'}</p>
           </div>
         </div>
 

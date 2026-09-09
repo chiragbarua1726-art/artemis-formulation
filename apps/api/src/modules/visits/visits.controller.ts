@@ -12,15 +12,19 @@ const checkInSchema = z.object({
 const checkoutSchema = z.object({
   productsDiscussed: z.array(
     z.object({
-      productId: z.string().uuid(),
+      productId: z.string().uuid().optional(),
+      productName: z.string().min(2).optional(),
       notes: z.string().optional(),
+      quantity: z.number().int().min(0).optional(),
+      value: z.number().min(0).optional(),
     })
   ).optional().default([]),
   samplesGiven: z.array(
     z.object({
-      productId: z.string().uuid(),
+      productId: z.string().uuid().optional(),
       productName: z.string(),
       quantity: z.number().int().min(1),
+      value: z.number().min(0).optional(),
     })
   ).optional(),
   feedback: z.string().optional(),
@@ -97,13 +101,30 @@ export const checkOut = async (req: AuthenticatedRequest, res: Response) => {
 
   // Record product discussions if provided
   if (productsDiscussed && productsDiscussed.length > 0) {
-    await prisma.productDiscussion.createMany({
-      data: productsDiscussed.map((pd) => ({
-        visitId: visit.id,
-        productId: pd.productId,
-        notes: pd.notes || null,
-      })),
-    });
+    for (const pd of productsDiscussed) {
+      let productId = pd.productId;
+      if (!productId && pd.productName) {
+        const product = await prisma.product.create({
+          data: {
+            name: pd.productName,
+            sku: `MR-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            unitPrice: pd.value ?? 0,
+            active: true,
+          },
+        });
+        productId = product.id;
+      }
+      if (!productId) continue;
+      await prisma.productDiscussion.create({
+        data: {
+          visitId: visit.id,
+          productId,
+          notes: pd.notes || null,
+          quantity: pd.quantity ?? null,
+          value: pd.value ?? null,
+        },
+      });
+    }
   }
 
   const updatedVisit = await prisma.visit.update({

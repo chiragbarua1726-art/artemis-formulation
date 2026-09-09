@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../../lib/api';
 import { useAuthStore } from '../../lib/authStore';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { CheckInModal, Doctor } from './CheckInModal';
+import { useToast } from '../../components/ui/Toast';
 import {
   Search,
   MapPin,
@@ -20,9 +21,14 @@ import {
 
 export const TodayPlan: React.FC = () => {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [selectedDoctorForCheckin, setSelectedDoctorForCheckin] = useState<Doctor | null>(null);
+  const [showAddDoctor, setShowAddDoctor] = useState(false);
+  const [newDoctor, setNewDoctor] = useState({ name: '', hospitalName: '', headquarters: '', specialty: 'Dermatology', address: '' });
+  const [isAddingDoctor, setIsAddingDoctor] = useState(false);
 
   // Fetch MR Dashboard metrics
   const { data: dashboardData, refetch: refetchDashboard } = useQuery({
@@ -76,6 +82,24 @@ export const TodayPlan: React.FC = () => {
   const handleRefresh = () => {
     refetchDashboard();
     refetchVisits();
+  };
+
+  const handleAddDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingDoctor(true);
+    try {
+      await apiRequest('/doctors', { method: 'POST', body: JSON.stringify(newDoctor) });
+      addToast({ type: 'success', title: 'Doctor added', message: `${newDoctor.name} is ready for a visit.` });
+      setNewDoctor({ name: '', hospitalName: '', headquarters: '', specialty: 'Dermatology', address: '' });
+      setShowAddDoctor(false);
+      refetchVisits();
+      // The query key includes the search/filter, so invalidate all doctor lists.
+      queryClient.invalidateQueries({ queryKey: ['doctors'] });
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Could not add doctor', message: err.message || 'Please check the details.' });
+    } finally {
+      setIsAddingDoctor(false);
+    }
   };
 
   return (
@@ -157,11 +181,41 @@ export const TodayPlan: React.FC = () => {
       {/* Doctor Directory & Call Launcher */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
+          <div>
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <span>Dermatologists & Aesthetic Clinics</span>
+            <span>Doctors & Clinics</span>
             <span className="text-xs font-normal text-slate-400">({doctors.length} in area)</span>
           </h2>
+          <p className="text-xs text-slate-500 mt-1">Choose a doctor or add the doctor you visited today.</p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setShowAddDoctor(!showAddDoctor)}>
+            + Add doctor
+          </Button>
         </div>
+
+        {showAddDoctor && (
+          <form onSubmit={handleAddDoctor} className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 space-y-3">
+            <div className="text-xs font-bold text-slate-900">Add doctor visited today</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {[
+                ['name', 'Doctor name', 'Dr. Anil Sharma'],
+                ['hospitalName', 'Clinic / hospital', 'Skin Care Clinic'],
+                ['headquarters', 'Headquarters / territory', 'North Delhi'],
+                ['specialty', 'Specialty', 'Dermatology'],
+                ['address', 'Clinic address', 'Sector, street, city'],
+              ].map(([key, label, placeholder]) => (
+                <input key={key} required value={newDoctor[key as keyof typeof newDoctor]}
+                  onChange={(e) => setNewDoctor({ ...newDoctor, [key]: e.target.value })}
+                  placeholder={placeholder} aria-label={label}
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddDoctor(false)}>Cancel</Button>
+              <Button type="submit" variant="primary" size="sm" isLoading={isAddingDoctor}>Save doctor</Button>
+            </div>
+          </form>
+        )}
 
         {/* Search & Filters */}
         <div className="space-y-2">
@@ -246,6 +300,9 @@ export const TodayPlan: React.FC = () => {
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
                           <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="truncate">{doc.address}</span>
+                        </div>
+                        <div className="text-[11px] text-blue-700 font-semibold mt-1">
+                          HQ: {doc.headquarters || 'Territory not set'}
                         </div>
                       </div>
                     </div>

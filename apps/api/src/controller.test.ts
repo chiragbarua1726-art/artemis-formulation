@@ -9,7 +9,7 @@ describe('Database & Auth Core Verification', () => {
     });
     expect(admin).toBeDefined();
     expect(admin?.role).toBe('ADMIN');
-    const valid = await bcrypt.compare('password123', admin!.passwordHash);
+    const valid = await bcrypt.compare('password123', admin!.passwordHash!);
     expect(valid).toBe(true);
   });
 

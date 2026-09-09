@@ -9,11 +9,21 @@ import analyticsRoutes from './modules/analytics/analytics.routes';
 import teamRoutes from './modules/team/team.routes';
 import masterDataRoutes from './modules/masterData/masterData.routes';
 import { errorHandler } from './middleware/errorHandler';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET)) {
+  throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be configured in production');
+}
+
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+app.disable('x-powered-by');
+app.use(helmet());
+app.use('/api/v1/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: true }));
 
 // CORS configuration
 app.use(

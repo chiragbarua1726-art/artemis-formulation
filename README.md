@@ -20,20 +20,22 @@ npm run dev
 - **Derma Web App:** [http://localhost:5173](http://localhost:5173)
 - **API Server & Health Check:** [http://localhost:5001/api/v1/health](http://localhost:5001/api/v1/health)
 
+### Authentication configuration
+
+Copy `apps/api/.env.example` to `apps/api/.env` and `apps/web/.env.example` to
+`apps/web/.env`. Email registration creates a Medical Representative account;
+manager and admin accounts must be created by an administrator. Google sign-in
+is enabled when the same Google OAuth web client ID is set as
+`GOOGLE_CLIENT_ID` (API) and `VITE_GOOGLE_CLIENT_ID` (web). Configure both local
+and production origins in Google Cloud Console before deploying.
+
 ---
 
-## 🔑 Demo Login Accounts (1-Click Switchers on Login Page)
+## 🔐 Account access
 
-All demo accounts use password: `password123`
-
-| Role | Name | Email | Description |
-|---|---|---|---|
-| **Head of Derma Operations (Admin)** | Dr. Vikram Malhotra | `admin@pharma.com` | Full master derma data control, user management, and executive analytics |
-| **RSM North Derma** | Sunil Verma | `manager.north@pharma.com` | Manages North territory derma reps (Delhi-NCR & Punjab), tour plans, expense sign-offs |
-| **RSM West Derma** | Ananya Deshmukh | `manager.west@pharma.com` | Manages West territory derma reps (Mumbai-Pune & Gujarat) |
-| **Derma Field Rep (Delhi)** | Rahul Sharma | `mr.rahul@pharma.com` | South & Central Delhi skin clinics (Check-in, DCR, tour plans, claims) |
-| **Derma Field Rep (Gurgaon/Noida)** | Priya Nair | `mr.priya@pharma.com` | Gurgaon & Noida aesthetic centers |
-| **Derma Field Rep (Mumbai)** | Rohan Kulkarni | `mr.rohan@pharma.com` | Bandra & South Mumbai aesthetic clinics |
+Users create their own Medical Representative account from the registration form,
+sign in with Google, or are provisioned by an administrator. Demo credentials
+are not included in the production login experience.
 
 ---
 
@@ -89,4 +91,33 @@ npm test --workspace=apps/api
 # Full build verification
 npm run build
 ```
+
+## 🐳 Docker deployment
+
+The production stack runs the web app, API, and PostgreSQL database together.
+It uses a named Docker volume for database persistence and serves the frontend
+and `/api` through the same Nginx origin.
+
+```bash
+cp .env.docker.example .env
+# Edit .env and set strong secrets, your public APP_URL/CORS_ORIGIN,
+# and optional Google/SMTP settings.
+docker compose up -d --build
+```
+
+Open `http://localhost:8080` locally, or the domain routed to the host. The
+API applies the Prisma schema automatically before starting. Do not run the
+development seed command in production; the catalog is intentionally empty so
+an administrator can add the company's products.
+
+Useful commands:
+
+```bash
+docker compose ps
+docker compose logs -f api
+docker compose down
+```
+
+`docker compose down` preserves the database volume. To permanently remove
+production data, use `docker compose down -v` only after taking a backup.
 # artemis

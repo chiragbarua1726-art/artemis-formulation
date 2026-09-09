@@ -22,12 +22,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const variantStyles = {
-      primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm active:translate-y-[0.5px]',
-      secondary: 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200/80',
-      outline: 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm',
+      primary: 'liquid-button bg-blue-600 hover:bg-blue-700 text-white shadow-sm active:translate-y-[0.5px]',
+      secondary: 'liquid-button bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200/80',
+      outline: 'liquid-button bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm',
       ghost: 'bg-transparent hover:bg-slate-100 text-slate-700',
-      danger: 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm',
-      dark: 'bg-slate-900 hover:bg-black text-white shadow-sm',
+      danger: 'liquid-button bg-rose-600 hover:bg-rose-700 text-white shadow-sm',
+      dark: 'liquid-button bg-slate-900 hover:bg-black text-white shadow-sm',
     };
 
     const sizeStyles = {
@@ -42,15 +42,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || isLoading}
         className={cn(
-          'inline-flex items-center justify-center transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none select-none font-sans',
+          'relative overflow-hidden inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none select-none font-sans',
           variantStyles[variant],
           sizeStyles[size],
           className
         )}
         {...props}
       >
-        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        {children}
+        <span className="relative z-10 inline-flex items-center">
+          {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {children}
+        </span>
       </button>
     );
   }

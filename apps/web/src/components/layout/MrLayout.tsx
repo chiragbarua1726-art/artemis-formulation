@@ -5,7 +5,6 @@ import {
   Calendar,
   ClipboardList,
   MapPin,
-  Receipt,
   Award,
   LogOut,
   Sparkle,
@@ -37,7 +36,6 @@ export const MrLayout: React.FC = () => {
     { to: '/mr/today', label: "Today's Plan", icon: Calendar },
     { to: '/mr/dcr', label: 'DCR', icon: ClipboardList, badge: activeVisit ? 'Active' : null },
     { to: '/mr/tour-plan', label: 'Tour Plan', icon: MapPin },
-    { to: '/mr/expenses', label: 'Expenses', icon: Receipt },
     { to: '/mr/performance', label: 'My Stats', icon: Award },
   ];
 

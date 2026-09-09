@@ -11,6 +11,112 @@
     @apply bg-slate-50 text-slate-900 font-sans antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 76px;
+  }
+}
+
+@keyframes artemis-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes artemis-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes artemis-pulse-soft {
+  0%, 100% {
+    opacity: 0.22;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes artemis-liquid-shine {
+  0% {
+    transform: translateX(-130%) rotate(18deg);
+  }
+  45%, 100% {
+    transform: translateX(180%) rotate(18deg);
+  }
+}
+
+.liquid-button {
+  isolation: isolate;
+}
+
+.liquid-button::before {
+  content: "";
+  position: absolute;
+  inset: -80% 45% -80% -45%;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0.48) 50%,
+    rgba(255, 255, 255, 0.08) 62%,
+    transparent 80%
+  );
+  transform: translateX(-130%) rotate(18deg);
+}
+
+.liquid-button:hover::before,
+.liquid-button:focus-visible::before {
+  animation: artemis-liquid-shine 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.liquid-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -12px rgba(37, 99, 235, 0.7);
+}
+
+.liquid-button:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+.artemis-fade-up {
+  animation: artemis-fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.artemis-float {
+  animation: artemis-float 5s ease-in-out infinite;
+}
+
+.artemis-pulse-soft {
+  animation: artemis-pulse-soft 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Custom Leaflet Map Popup Styling */

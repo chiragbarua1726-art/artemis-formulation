@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../lib/authStore';
 import { apiRequest } from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
-import { Lock, Mail, Eye, EyeOff, Sparkles, Sparkle } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Sparkle } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
   const navigate = useNavigate();
@@ -13,9 +13,51 @@ export const LoginView: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [loginAudience, setLoginAudience] = useState<'MR' | 'MANAGER'>('MR');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  const completeLogin = (data: any) => {
+    login({ accessToken: data.accessToken, refreshToken: data.refreshToken }, data.user);
+    addToast({ type: 'success', title: 'Welcome to Artemis Formulation', message: `Logged in as ${data.user.name}` });
+    navigate(data.user.role === 'MR' ? '/mr/today' : '/manager/overview');
+  };
+
+  useEffect(() => {
+    if (!googleClientId || !googleButtonRef.current) return;
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = () => {
+      const google = (window as any).google;
+      if (!google || !googleButtonRef.current) return;
+      google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: async (response: { credential: string }) => {
+          try {
+            setIsLoading(true);
+            const data = await apiRequest('/auth/google', {
+              method: 'POST',
+              body: JSON.stringify({ credential: response.credential }),
+            });
+            completeLogin(data);
+          } catch (err: any) {
+            setError(err.message || 'Google sign-in failed.');
+          } finally {
+            setIsLoading(false);
+          }
+        },
+      });
+      google.accounts.id.renderButton(googleButtonRef.current, { theme: 'outline', size: 'large', width: 360 });
+    };
+    document.head.appendChild(script);
+    return () => script.remove();
+  }, [googleClientId]);
 
   const handleSubmit = async (e?: React.FormEvent, customCreds?: { email: string; pass: string }) => {
     if (e) e.preventDefault();
@@ -26,38 +68,25 @@ export const LoginView: React.FC = () => {
     const loginPass = customCreds ? customCreds.pass : password;
 
     try {
-      const data = await apiRequest('/auth/login', {
+      const data = await apiRequest(isRegistering ? '/auth/register' : '/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: loginEmail, password: loginPass }),
+        body: JSON.stringify(isRegistering
+          ? { name, email: loginEmail, password: loginPass }
+          : { email: loginEmail, password: loginPass }),
       });
 
-      login(
-        { accessToken: data.accessToken, refreshToken: data.refreshToken },
-        data.user
-      );
-
-      addToast({
-        type: 'success',
-        title: `Welcome to Artemis Formulation`,
-        message: `Logged in as ${data.user.name} (${data.user.role})`,
-      });
-
-      if (data.user.role === 'MR') {
-        navigate('/mr/today');
+      if (isRegistering) {
+        setIsRegistering(false);
+        setPassword('');
+        addToast({ type: 'success', title: 'Check your email', message: 'We sent a confirmation link before you can sign in.' });
       } else {
-        navigate('/manager/overview');
+        completeLogin(data);
       }
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickLogin = (roleEmail: string) => {
-    setEmail(roleEmail);
-    setPassword('password123');
-    handleSubmit(undefined, { email: roleEmail, pass: 'password123' });
   };
 
   return (
@@ -76,9 +105,15 @@ export const LoginView: React.FC = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-600/20 mb-3">
             <Sparkle className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Artemis Formulation</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Dermatology Field Sales Intelligence & Reporting System
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{isRegistering ? 'Create your account' : 'Artemis Formulation'}</h1>
+          {!isRegistering && (
+            <div className="mt-4 flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+              <button type="button" onClick={() => setLoginAudience('MR')} className={`flex-1 rounded-lg py-2 ${loginAudience === 'MR' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>MR login</button>
+              <button type="button" onClick={() => setLoginAudience('MANAGER')} className={`flex-1 rounded-lg py-2 ${loginAudience === 'MANAGER' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Manager / Admin</button>
+            </div>
+          )}
+          <p className="text-xs text-slate-500 mt-3">
+            {isRegistering ? 'Join your dermatology field sales team' : 'Dermatology Field Sales Intelligence & Reporting System'}
           </p>
         </div>
 
@@ -90,6 +125,11 @@ export const LoginView: React.FC = () => {
             </div>
           )}
 
+          {isRegistering && (<div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Full name</label>
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+          </div>)}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
             <div className="relative">
@@ -134,85 +174,24 @@ export const LoginView: React.FC = () => {
             size="lg"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl h-11 shadow-sm mt-2"
           >
-            Continue with Email
+            {isRegistering ? 'Create account' : 'Continue with Email'}
           </Button>
         </form>
 
-        {/* 1-Click Demo Logins */}
-        <div className="mt-8 pt-6 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              1-Click Demo Logins
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono">pw: password123</span>
-          </div>
+        {!isRegistering && googleClientId && (
+          <>
+            <div className="flex items-center gap-3 my-5 text-[11px] text-slate-400">
+              <span className="h-px bg-slate-200 flex-1" />OR<span className="h-px bg-slate-200 flex-1" />
+            </div>
+            <div ref={googleButtonRef} className="flex justify-center min-h-10" />
+          </>
+        )}
 
-          <div className="grid grid-cols-1 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('mr.rahul@pharma.com')}
-              className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 text-left transition-all group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                  MR
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-800 group-hover:text-blue-700">
-                    Rahul Sharma <span className="font-normal text-slate-500">(Derma Rep - Delhi)</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono">mr.rahul@pharma.com</div>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                Switch →
-              </span>
-            </button>
+        <button type="button" onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
+          className="w-full mt-5 text-xs font-semibold text-blue-600 hover:text-blue-700">
+          {isRegistering ? 'Already have an account? Sign in' : 'New to Artemis? Create an account'}
+        </button>
 
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('manager.north@pharma.com')}
-              className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-left transition-all group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs">
-                  RSM
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-800 group-hover:text-sky-700">
-                    Sunil Verma <span className="font-normal text-slate-500">(RSM North Derma)</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono">manager.north@pharma.com</div>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                Switch →
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin@pharma.com')}
-              className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-left transition-all group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
-                  ADM
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-800 group-hover:text-purple-700">
-                    Dr. Vikram Malhotra <span className="font-normal text-slate-500">(Head of Derma)</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono">admin@pharma.com</div>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                Switch →
-              </span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

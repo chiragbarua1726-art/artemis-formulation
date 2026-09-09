@@ -64,6 +64,7 @@ export const DcrReportForm: React.FC = () => {
   const [nextVisitNote, setNextVisitNote] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [productLines, setProductLines] = useState([{ name: '', quantity: 1, value: 0 }]);
 
   // Reset DCR form when visit changes
   useEffect(() => {
@@ -82,6 +83,12 @@ export const DcrReportForm: React.FC = () => {
     setSelectedProductIds((prev) =>
       prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
     );
+  };
+
+  const updateProductLine = (index: number, field: 'name' | 'quantity' | 'value', value: string) => {
+    setProductLines((lines) => lines.map((line, i) => i === index
+      ? { ...line, [field]: field === 'name' ? value : Math.max(0, Number(value)) }
+      : line));
   };
 
   const handleSampleQtyChange = (productId: string, delta: number) => {
@@ -120,7 +127,8 @@ export const DcrReportForm: React.FC = () => {
     e.preventDefault();
     if (!activeVisit) return;
 
-    if (selectedProductIds.length === 0) {
+    const validLines = productLines.filter((line) => line.name.trim() && line.quantity > 0);
+    if (selectedProductIds.length === 0 && validLines.length === 0) {
       addToast({
         type: 'error',
         title: 'Formulation Selection Required',
@@ -132,19 +140,28 @@ export const DcrReportForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const productsDiscussed = selectedProductIds.map((pid) => ({
-        productId: pid,
-        notes: productNotes[pid] || '',
-      }));
+      const productsDiscussed: Array<Record<string, string | number>> = [
+        ...selectedProductIds.map((pid) => ({ productId: pid, notes: productNotes[pid] || '' })),
+        ...validLines.map((line) => ({ productName: line.name.trim(), quantity: line.quantity, value: line.value })),
+      ];
 
-      const samplesGiven = Object.entries(sampleQuantities).map(([pid, qty]) => {
+      const samplesGiven: Array<Record<string, string | number>> = [...validLines.map((line) => {
+        const prod = products.find((p) => p.name.toLowerCase() === line.name.trim().toLowerCase());
+        return {
+          productId: prod?.id || '',
+          productName: line.name.trim(),
+          quantity: line.quantity,
+          value: line.value,
+        };
+      }), ...Object.entries(sampleQuantities).map(([pid, qty]) => {
         const prod = products.find((p) => p.id === pid);
         return {
           productId: pid,
           productName: prod?.name || 'Derma Formulation',
           quantity: qty,
+          value: 0,
         };
-      });
+      })];
 
       // Compose full feedback including follow-up details if filled
       let fullFeedback = feedback;
@@ -182,6 +199,7 @@ export const DcrReportForm: React.FC = () => {
       setNextVisitDate('');
       setNextVisitNote('');
       setPhotoUrl(null);
+      setProductLines([{ name: '', quantity: 1, value: 0 }]);
       queryClient.invalidateQueries({ queryKey: ['activeVisit'] });
       queryClient.invalidateQueries({ queryKey: ['myVisitsToday'] });
       refetchVisits();
@@ -260,6 +278,28 @@ export const DcrReportForm: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Product entry for the actual field call */}
+          <div className="bg-white rounded-2xl border border-blue-200 p-5 shadow-subtle space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Products discussed / ordered</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Enter the product name, quantity and value from this doctor visit.</p>
+            </div>
+            {productLines.map((line, index) => (
+              <div key={index} className="grid grid-cols-1 sm:grid-cols-[1fr_110px_130px_auto] gap-2 items-center">
+                <input required={index === 0} value={line.name} onChange={(e) => updateProductLine(index, 'name', e.target.value)}
+                  placeholder="Product name" className="px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                <input type="number" min="1" value={line.quantity} onChange={(e) => updateProductLine(index, 'quantity', e.target.value)}
+                  placeholder="Quantity" className="px-3 py-2 border border-slate-200 rounded-xl text-xs" />
+                <input type="number" min="0" step="0.01" value={line.value} onChange={(e) => updateProductLine(index, 'value', e.target.value)}
+                  placeholder="Value" className="px-3 py-2 border border-slate-200 rounded-xl text-xs" />
+                {productLines.length > 1 && <button type="button" onClick={() => setProductLines((lines) => lines.filter((_, i) => i !== index))}
+                  className="text-xs text-rose-600 hover:text-rose-700">Remove</button>}
+              </div>
+            ))}
+            <button type="button" onClick={() => setProductLines((lines) => [...lines, { name: '', quantity: 1, value: 0 }])}
+              className="text-xs font-semibold text-blue-700 hover:text-blue-800">+ Add another product</button>
           </div>
 
           {/* Section 1: Formulations Detailed */}
