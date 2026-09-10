@@ -10,13 +10,17 @@ const checkInSchema = zod_1.z.object({
 });
 const checkoutSchema = zod_1.z.object({
     productsDiscussed: zod_1.z.array(zod_1.z.object({
-        productId: zod_1.z.string().uuid(),
+        productId: zod_1.z.string().uuid().optional(),
+        productName: zod_1.z.string().min(2).optional(),
         notes: zod_1.z.string().optional(),
+        quantity: zod_1.z.number().int().min(0).optional(),
+        value: zod_1.z.number().min(0).optional(),
     })).optional().default([]),
     samplesGiven: zod_1.z.array(zod_1.z.object({
-        productId: zod_1.z.string().uuid(),
+        productId: zod_1.z.string().uuid().optional(),
         productName: zod_1.z.string(),
         quantity: zod_1.z.number().int().min(1),
+        value: zod_1.z.number().min(0).optional(),
     })).optional(),
     feedback: zod_1.z.string().optional(),
     photoUrl: zod_1.z.string().optional().nullable(),
@@ -81,13 +85,31 @@ const checkOut = async (req, res) => {
     }
     // Record product discussions if provided
     if (productsDiscussed && productsDiscussed.length > 0) {
-        await prisma_1.prisma.productDiscussion.createMany({
-            data: productsDiscussed.map((pd) => ({
-                visitId: visit.id,
-                productId: pd.productId,
-                notes: pd.notes || null,
-            })),
-        });
+        for (const pd of productsDiscussed) {
+            let productId = pd.productId;
+            if (!productId && pd.productName) {
+                const product = await prisma_1.prisma.product.create({
+                    data: {
+                        name: pd.productName,
+                        sku: `MR-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                        unitPrice: pd.value ?? 0,
+                        active: true,
+                    },
+                });
+                productId = product.id;
+            }
+            if (!productId)
+                continue;
+            await prisma_1.prisma.productDiscussion.create({
+                data: {
+                    visitId: visit.id,
+                    productId,
+                    notes: pd.notes || null,
+                    quantity: pd.quantity ?? null,
+                    value: pd.value ?? null,
+                },
+            });
+        }
     }
     const updatedVisit = await prisma_1.prisma.visit.update({
         where: { id },

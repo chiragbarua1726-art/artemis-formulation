@@ -7,7 +7,7 @@ const router = (0, express_1.Router)();
 router.use(auth_1.authenticate);
 // Doctors: Accessible for selection by all authenticated users; mutating is Admin only
 router.get('/doctors', masterData_controller_1.getDoctors);
-router.post('/doctors', (0, auth_1.requireRole)(['ADMIN']), masterData_controller_1.createDoctor);
+router.post('/doctors', (0, auth_1.requireRole)(['ADMIN', 'MANAGER', 'MR']), masterData_controller_1.createDoctor);
 router.put('/doctors/:id', (0, auth_1.requireRole)(['ADMIN']), masterData_controller_1.updateDoctor);
 router.delete('/doctors/:id', (0, auth_1.requireRole)(['ADMIN']), masterData_controller_1.deleteDoctor);
 // Products: Accessible for selection by all authenticated users; mutating is Admin only
