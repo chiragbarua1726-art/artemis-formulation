@@ -21,6 +21,7 @@ if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || !proces
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet());
 app.use('/api/v1/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: true }));
