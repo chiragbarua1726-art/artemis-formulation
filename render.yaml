@@ -10,7 +10,7 @@ services:
   - type: web
     name: artemis-api
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: >-
       sed -i 's/provider = "sqlite"/provider = "postgresql"/' apps/api/prisma/schema.prisma &&
       npm ci &&
@@ -56,7 +56,6 @@ services:
   - type: web
     name: artemis-web
     runtime: static
-    plan: free
     buildCommand: npm ci && npm run build --workspace=apps/web
     staticPublishPath: apps/web/dist
     routes:
