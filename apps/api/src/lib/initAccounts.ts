@@ -7,7 +7,28 @@ export async function ensureDefaultAccounts() {
   try {
     const passwordHash = await bcrypt.hash('Password123!', 10);
 
-    // 1. Manager account
+    // 1. Manager account (requested by user)
+    const customManagerHash = await bcrypt.hash('artemis123', 10);
+    await prisma.user.upsert({
+      where: { email: 'artemisformulation@gmail.com' },
+      update: {
+        passwordHash: customManagerHash,
+        role: 'MANAGER',
+        active: true,
+        emailVerified: true,
+      },
+      create: {
+        name: 'Artemis Manager',
+        email: 'artemisformulation@gmail.com',
+        passwordHash: customManagerHash,
+        role: 'MANAGER',
+        active: true,
+        emailVerified: true,
+        region: 'National Derma Division',
+        phone: '+91 98111 23456',
+      },
+    });
+
     await prisma.user.upsert({
       where: { email: 'manager@artemis.test' },
       update: {
