@@ -62,9 +62,11 @@ app.use(errorHandler);
 
 // Only listen if not imported by test runner
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`🚀 Aegis MR API Server running on port ${PORT}`);
     console.log(`📍 Health check: http://localhost:${PORT}/api/v1/health`);
+    const { ensureDefaultAccounts } = await import('./lib/initAccounts');
+    await ensureDefaultAccounts();
   });
 }
 
