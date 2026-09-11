@@ -140,7 +140,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
       where: { id: user.id },
       data: { resetPasswordToken: token.token, resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000) },
     });
-    await sendPasswordResetEmail(user.email, user.name, token.token);
+    try {
+      await sendPasswordResetEmail(user.email, user.name, token.token);
+    } catch (error) {
+      console.error('Password reset email delivery failed:', error);
+      return res.status(503).json({ error: 'Email delivery is temporarily unavailable. Please try again later.' });
+    }
   }
   return res.json({ message: 'If an account exists for that email, a password reset link has been sent.' });
 };
@@ -202,7 +207,12 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
     },
   });
 
-  await sendVerificationEmail(user.email, user.name, verification.token);
+  try {
+    await sendVerificationEmail(user.email, user.name, verification.token);
+  } catch (error) {
+    console.error('Account verification email delivery failed:', error);
+    return res.status(503).json({ error: 'Email delivery is temporarily unavailable. Please try again later.' });
+  }
   res.status(201).json({ user, message: 'Account created. Check your email to confirm your account.' });
 };
 
