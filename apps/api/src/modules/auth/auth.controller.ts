@@ -6,7 +6,7 @@ import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import { prisma } from '../../lib/prisma';
 import { AuthenticatedRequest } from '../../middleware/auth';
-import { createVerificationToken, sendVerificationEmail } from './email.service';
+import { createVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from './email.service';
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
@@ -33,6 +33,8 @@ const registerSchema = z.object({
 });
 
 const googleSchema = z.object({ credential: z.string().min(20) });
+const forgotPasswordSchema = z.object({ email: z.string().email() });
+const resetPasswordSchema = z.object({ token: z.string().min(20), password: z.string().min(8) });
 
 function userResponse(user: any) {
   return {
@@ -127,6 +129,33 @@ export const refreshToken = async (req: Request, res: Response) => {
 
 export const logout = async (_req: Request, res: Response) => {
   res.json({ message: 'Successfully logged out' });
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = forgotPasswordSchema.parse(req.body);
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (user) {
+    const token = createVerificationToken();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetPasswordToken: token.token, resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000) },
+    });
+    await sendPasswordResetEmail(user.email, user.name, token.token);
+  }
+  return res.json({ message: 'If an account exists for that email, a password reset link has been sent.' });
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, password } = resetPasswordSchema.parse(req.body);
+  const user = await prisma.user.findFirst({
+    where: { resetPasswordToken: token, resetPasswordExpires: { gt: new Date() } },
+  });
+  if (!user) return res.status(400).json({ error: 'This password reset link is invalid or expired' });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(password, 12), resetPasswordToken: null, resetPasswordExpires: null },
+  });
+  return res.json({ message: 'Password reset successfully. You can now sign in.' });
 };
 
 export const register = async (req: AuthenticatedRequest, res: Response) => {

@@ -16,6 +16,8 @@ model User {
   emailVerified       Boolean   @default(false)
   verificationToken   String?   @unique
   verificationExpires DateTime?
+  resetPasswordToken   String?   @unique
+  resetPasswordExpires DateTime?
   role                String    @default("MR") // "ADMIN" | "MANAGER" | "MR"
   phone               String?
   region              String?

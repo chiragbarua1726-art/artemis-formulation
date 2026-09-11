@@ -17,11 +17,22 @@ export const LoginView: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [loginAudience, setLoginAudience] = useState<'MR' | 'MANAGER'>('MR');
   const [managerCode, setManagerCode] = useState('');
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('reset');
+    if (token) {
+      setResetToken(token);
+      setForgotPassword(true);
+    }
+  }, []);
 
   const completeLogin = (data: any) => {
     login({ accessToken: data.accessToken, refreshToken: data.refreshToken }, data.user);
@@ -69,6 +80,17 @@ export const LoginView: React.FC = () => {
     const loginPass = customCreds ? customCreds.pass : password;
 
     try {
+      if (forgotPassword) {
+        const endpoint = resetToken ? '/auth/reset-password' : '/auth/forgot-password';
+        const body = resetToken ? { token: resetToken, password: resetPassword } : { email: loginEmail };
+        await apiRequest(endpoint, { method: 'POST', body: JSON.stringify(body) });
+        setError(null);
+        setForgotPassword(false);
+        setResetToken('');
+        setResetPassword('');
+        addToast({ type: 'success', title: resetToken ? 'Password updated' : 'Check your email', message: resetToken ? 'You can now sign in.' : 'If the account exists, a reset link was sent.' });
+        return;
+      }
       const data = await apiRequest(isRegistering ? '/auth/register' : '/auth/login', {
         method: 'POST',
         body: JSON.stringify(isRegistering
@@ -106,11 +128,11 @@ export const LoginView: React.FC = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-600/20 mb-3">
             <Sparkle className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{isRegistering ? 'Create your account' : 'Artemis Formulation'}</h1>
-          <div className="mt-4 flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{forgotPassword ? (resetToken ? 'Set a new password' : 'Reset your password') : isRegistering ? 'Create your account' : 'Artemis Formulation'}</h1>
+          {!forgotPassword && <div className="mt-4 flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
               <button type="button" onClick={() => setLoginAudience('MR')} className={`flex-1 rounded-lg py-2 ${loginAudience === 'MR' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>MR login</button>
               <button type="button" onClick={() => setLoginAudience('MANAGER')} className={`flex-1 rounded-lg py-2 ${loginAudience === 'MANAGER' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Manager / Admin</button>
-          </div>
+          </div>}
           <p className="text-xs text-slate-500 mt-3">
             {isRegistering ? 'Join your dermatology field sales team' : 'Dermatology Field Sales Intelligence & Reporting System'}
           </p>
@@ -124,12 +146,12 @@ export const LoginView: React.FC = () => {
             </div>
           )}
 
-          {isRegistering && (<div>
+          {!forgotPassword && isRegistering && (<div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Full name</label>
             <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name"
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
           </div>)}
-          {loginAudience === 'MANAGER' && (
+          {!forgotPassword && loginAudience === 'MANAGER' && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Manager access code</label>
               <input type="password" required value={managerCode} onChange={(e) => setManagerCode(e.target.value)} placeholder="Enter your unique manager code"
@@ -144,6 +166,7 @@ export const LoginView: React.FC = () => {
                 type="email"
                 required
                 value={email}
+                autoComplete="off"
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@pharma.com"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
@@ -151,7 +174,7 @@ export const LoginView: React.FC = () => {
             </div>
           </div>
 
-          <div>
+          {!forgotPassword && <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Password</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -171,7 +194,14 @@ export const LoginView: React.FC = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-          </div>
+          </div>}
+          {forgotPassword && resetToken && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">New password</label>
+                <input type="password" required minLength={8} value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} autoComplete="new-password"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+              </div>
+            )}
 
           <Button
             type="submit"
@@ -180,11 +210,11 @@ export const LoginView: React.FC = () => {
             size="lg"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl h-11 shadow-sm mt-2"
           >
-            {isRegistering ? 'Create account' : 'Continue with Email'}
+            {forgotPassword ? (resetToken ? 'Set new password' : 'Send reset link') : isRegistering ? 'Create account' : 'Continue with Email'}
           </Button>
         </form>
 
-        {!isRegistering && googleClientId && (
+        {!isRegistering && !forgotPassword && googleClientId && (
           <>
             <div className="flex items-center gap-3 my-5 text-[11px] text-slate-400">
               <span className="h-px bg-slate-200 flex-1" />OR<span className="h-px bg-slate-200 flex-1" />
@@ -193,10 +223,15 @@ export const LoginView: React.FC = () => {
           </>
         )}
 
-        <button type="button" onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
+        {!forgotPassword && !isRegistering && <button type="button" onClick={() => { setForgotPassword(true); setError(null); }}
+          className="w-full mt-5 text-xs font-semibold text-slate-600 hover:text-blue-700">
+          Forgot password?
+        </button>}
+        {!forgotPassword && <button type="button" onClick={() => { setIsRegistering(!isRegistering); setForgotPassword(false); setError(null); }}
           className="w-full mt-5 text-xs font-semibold text-blue-600 hover:text-blue-700">
           {isRegistering ? 'Already have an account? Sign in' : 'New to Artemis? Create an account'}
-        </button>
+        </button>}
+        {forgotPassword && <button type="button" onClick={() => { setForgotPassword(false); setResetToken(''); setError(null); }} className="w-full mt-5 text-xs font-semibold text-blue-600 hover:text-blue-700">Back to sign in</button>}
 
       </div>
     </div>

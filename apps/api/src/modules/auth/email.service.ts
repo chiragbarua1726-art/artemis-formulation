@@ -32,3 +32,24 @@ export async function sendVerificationEmail(email: string, name: string, token: 
     html: `<p>Hi ${name},</p><p>Confirm your Artemis account to start using the field reporting workspace.</p><p><a href="${verificationUrl}">Confirm email address</a></p><p>This link expires in 24 hours.</p>`,
   });
 }
+
+export async function sendPasswordResetEmail(email: string, name: string, token: string) {
+  const resetUrl = `${appUrl}/login?reset=${encodeURIComponent(token)}`;
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    console.info(`[email] Password reset link for ${email}: ${resetUrl}`);
+    return;
+  }
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: Number(process.env.SMTP_PORT || 587) === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+  });
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: email,
+    subject: 'Reset your Artemis password',
+    text: `Hi ${name}, reset your Artemis password: ${resetUrl}`,
+    html: `<p>Hi ${name},</p><p><a href="${resetUrl}">Reset your Artemis password</a></p><p>This link expires in 1 hour.</p>`,
+  });
+}
