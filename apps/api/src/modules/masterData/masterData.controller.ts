@@ -43,7 +43,10 @@ export const getDoctors = async (req: AuthenticatedRequest, res: Response) => {
                   in: [
                     req.user!.id,
                     ...(await prisma.user.findMany({
-                      where: { managerId: req.user!.id, active: true },
+                      where: {
+                        active: true,
+                        OR: [{ managerId: req.user!.id }, { managerId: null }],
+                      },
                       select: { id: true },
                     })).map((user) => user.id),
                   ],
@@ -284,7 +287,7 @@ async function reviewDoctor(req: AuthenticatedRequest, res: Response, status: 'A
   if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
   if (req.user!.role === 'MANAGER' && doctor.createdById) {
     const creator = await prisma.user.findUnique({ where: { id: doctor.createdById }, select: { managerId: true } });
-    if (creator?.managerId !== req.user!.id) {
+    if (creator?.managerId !== req.user!.id && creator?.managerId != null) {
       return res.status(403).json({ error: 'Forbidden: Doctor is outside your team' });
     }
   }

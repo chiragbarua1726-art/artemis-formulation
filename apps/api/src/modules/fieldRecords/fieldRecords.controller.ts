@@ -64,7 +64,10 @@ export const confirmOrderImport = async (req: AuthenticatedRequest, res: Respons
 async function teamIds(req: AuthenticatedRequest) {
   if (req.user!.role !== 'MANAGER') return undefined;
   const reports = await prisma.user.findMany({
-    where: { managerId: req.user!.id, active: true },
+    where: {
+      active: true,
+      OR: [{ managerId: req.user!.id }, { managerId: null }],
+    },
     select: { id: true },
   });
   return reports.map((report) => report.id);
@@ -144,7 +147,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
 async function canReview(req: AuthenticatedRequest, mrId: string) {
   if (req.user!.role === 'ADMIN') return true;
   const mr = await prisma.user.findUnique({ where: { id: mrId }, select: { managerId: true } });
-  return mr?.managerId === req.user!.id;
+  return mr?.managerId === req.user!.id || mr?.managerId == null;
 }
 
 export async function reviewChemist(req: AuthenticatedRequest, res: Response, status: 'APPROVED' | 'REJECTED') {
