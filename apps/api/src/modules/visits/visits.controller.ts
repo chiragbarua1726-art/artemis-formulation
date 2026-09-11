@@ -14,7 +14,7 @@ const checkInSchema = z.object({
 const checkoutSchema = z.object({
   productsDiscussed: z.array(
     z.object({
-      productId: z.string().uuid().optional(),
+      productId: z.string().uuid().optional().or(z.literal('')),
       productName: z.string().min(2).optional(),
       notes: z.string().optional(),
       quantity: z.number().int().min(0).optional(),
