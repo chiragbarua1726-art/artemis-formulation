@@ -76,6 +76,12 @@ export const login = async (req: Request, res: Response) => {
   if (!user || !user.active || !user.passwordHash) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
+  if (role === 'MR' && user.role !== 'MR') {
+    return res.status(403).json({ error: 'Select the Manager / Admin login option for this account' });
+  }
+  if (role === 'MANAGER' && !['MANAGER', 'ADMIN'].includes(user.role)) {
+    return res.status(403).json({ error: 'This account is not authorized for manager sign-in' });
+  }
   if (!user.emailVerified) {
     return res.status(403).json({ error: 'Please confirm your email address before signing in' });
   }
