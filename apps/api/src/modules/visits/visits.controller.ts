@@ -7,6 +7,8 @@ const checkInSchema = z.object({
   doctorId: z.string().uuid('Invalid doctor ID'),
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
+  visitDate: z.coerce.date().optional(),
+  visitPurpose: z.string().max(200).optional(),
 });
 
 const checkoutSchema = z.object({
@@ -29,16 +31,25 @@ const checkoutSchema = z.object({
   ).optional(),
   feedback: z.string().optional(),
   photoUrl: z.string().optional().nullable(),
+  notes: z.string().max(2_000).optional().nullable(),
+  nextVisitDate: z.coerce.date().optional().nullable(),
 });
 
 export const checkIn = async (req: AuthenticatedRequest, res: Response) => {
   const mrId = req.user!.id;
-  const { doctorId, lat, lng } = checkInSchema.parse(req.body);
+  const { doctorId, lat, lng, visitDate, visitPurpose } = checkInSchema.parse(req.body);
 
   // Verify doctor exists
   const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
   if (!doctor) {
     return res.status(404).json({ error: 'Doctor not found' });
+  }
+  if (doctor.status !== 'APPROVED') {
+    return res.status(409).json({
+      error: doctor.status === 'REJECTED'
+        ? 'This doctor record was rejected and cannot be visited'
+        : 'This doctor record is awaiting manager approval',
+    });
   }
 
   // Check if there is already an active (un-checked-out) visit
@@ -63,7 +74,9 @@ export const checkIn = async (req: AuthenticatedRequest, res: Response) => {
       doctorId,
       checkInLat: lat,
       checkInLng: lng,
-      checkInTime: new Date(),
+      checkInTime: visitDate || new Date(),
+      visitDate: visitDate || new Date(),
+      visitPurpose: visitPurpose || null,
     },
     include: {
       doctor: true,
@@ -79,7 +92,7 @@ export const checkIn = async (req: AuthenticatedRequest, res: Response) => {
 export const checkOut = async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const mrId = req.user!.id;
-  const { productsDiscussed, samplesGiven, feedback, photoUrl } = checkoutSchema.parse(req.body);
+  const { productsDiscussed, samplesGiven, feedback, photoUrl, notes, nextVisitDate } = checkoutSchema.parse(req.body);
 
   const visit = await prisma.visit.findUnique({
     where: { id },
@@ -133,6 +146,8 @@ export const checkOut = async (req: AuthenticatedRequest, res: Response) => {
       checkOutTime: new Date(),
       feedback: feedback || null,
       photoUrl: photoUrl || null,
+      notes: notes || null,
+      nextVisitDate: nextVisitDate || null,
       samplesGiven: samplesGiven ? JSON.stringify(samplesGiven) : null,
     },
     include: {

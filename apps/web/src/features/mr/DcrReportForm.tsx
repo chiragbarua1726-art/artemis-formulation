@@ -244,9 +244,6 @@ export const DcrReportForm: React.FC = () => {
                     <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
                       Visit In Progress
                     </span>
-                    <Badge variant="blue" size="sm" className="bg-blue-950 text-blue-300 border-blue-800">
-                      {activeVisit.doctor?.category || 'Tier B'}
-                    </Badge>
                   </div>
                   <h2 className="text-base font-bold text-white mt-0.5 truncate">
                     {activeVisit.doctor?.name}
@@ -591,7 +588,7 @@ export const DcrReportForm: React.FC = () => {
                           </Badge>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">
-                          {visit.doctor?.hospitalName} • {visit.doctor?.specialty}
+                          {visit.doctor?.hospitalName}
                         </p>
                       </div>
                       <div className="text-right">

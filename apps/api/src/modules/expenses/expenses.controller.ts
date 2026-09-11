@@ -102,9 +102,12 @@ export const approveExpense = async (req: AuthenticatedRequest, res: Response) =
   const { id } = req.params;
   const { reviewNote } = reviewSchema.parse(req.body);
 
-  const expense = await prisma.expense.findUnique({ where: { id } });
+  const expense = await prisma.expense.findUnique({ where: { id }, include: { mr: true } });
   if (!expense) {
     return res.status(404).json({ error: 'Expense claim not found' });
+  }
+  if (req.user!.role === 'MANAGER' && expense.mr.managerId !== req.user!.id) {
+    return res.status(403).json({ error: 'Forbidden: Expense claim is outside your team' });
   }
 
   const updated = await prisma.expense.update({
@@ -130,9 +133,12 @@ export const rejectExpense = async (req: AuthenticatedRequest, res: Response) =>
   const { id } = req.params;
   const { reviewNote } = reviewSchema.parse(req.body);
 
-  const expense = await prisma.expense.findUnique({ where: { id } });
+  const expense = await prisma.expense.findUnique({ where: { id }, include: { mr: true } });
   if (!expense) {
     return res.status(404).json({ error: 'Expense claim not found' });
+  }
+  if (req.user!.role === 'MANAGER' && expense.mr.managerId !== req.user!.id) {
+    return res.status(403).json({ error: 'Forbidden: Expense claim is outside your team' });
   }
 
   const updated = await prisma.expense.update({

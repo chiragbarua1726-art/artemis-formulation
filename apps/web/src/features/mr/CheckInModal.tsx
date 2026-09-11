@@ -10,13 +10,11 @@ import { useNavigate } from 'react-router-dom';
 export interface Doctor {
   id: string;
   name: string;
-  specialty: string;
   hospitalName: string;
   headquarters?: string | null;
   address: string;
   latitude?: number | null;
   longitude?: number | null;
-  category?: string | null;
 }
 
 interface CheckInModalProps {
@@ -126,11 +124,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <h4 className="text-sm font-bold text-slate-900 truncate">{doctor.name}</h4>
-              <Badge variant="blue" size="sm">
-                {doctor.category || 'Tier B'}
-              </Badge>
             </div>
-            <p className="text-xs font-semibold text-blue-800 mt-0.5">{doctor.specialty}</p>
             <div className="flex items-center gap-1 text-xs text-slate-600 mt-1">
               <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span className="truncate">{doctor.hospitalName}</span>

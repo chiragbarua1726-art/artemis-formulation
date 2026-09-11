@@ -43,6 +43,10 @@ model User {
   visits        Visit[]
   tourPlans     TourPlan[]
   expenses      Expense[]
+  createdDoctors Doctor[]       @relation("DoctorCreatedBy")
+  chemists      Chemist[]
+  povOrders     PovOrder[]
+  attendance    Attendance[]
 
   @@index([role])
   @@index([managerId])
@@ -52,21 +56,25 @@ model User {
 model Doctor {
   id           String      @id @default(uuid())
   name         String
-  specialty    String
   hospitalName String
   address      String
   latitude     Float?
   longitude    Float?
   phone        String?
-  category     String?     // e.g. "Tier A", "Tier B", "Tier C"
   active       Boolean     @default(true)
+  status       String      @default("APPROVED")
+  createdById  String?
+  createdBy    User?       @relation("DoctorCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  reviewedBy   String?
+  reviewNote   String?
+  reviewedAt   DateTime?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
   visits       Visit[]
 
-  @@index([specialty])
-  @@index([category])
+  @@index([status])
+  @@index([createdById])
 }
 
 model Product {
@@ -96,6 +104,10 @@ model Visit {
   checkOutTime      DateTime?
   checkInLat        Float
   checkInLng        Float
+  visitDate         DateTime?
+  visitPurpose      String?
+  notes             String?
+  nextVisitDate     DateTime?
   productsDiscussed ProductDiscussion[]
   samplesGiven      Json?               // [{ productId, productName, quantity }]
   feedback          String?
@@ -115,6 +127,8 @@ model ProductDiscussion {
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   notes     String?
+  quantity  Int?
+  value     Float?
   createdAt DateTime @default(now())
 
   @@index([visitId])
@@ -158,4 +172,69 @@ model Expense {
   @@index([mrId])
   @@index([status])
   @@index([category])
+}
+
+model Chemist {
+  id         String   @id @default(uuid())
+  name       String
+  address    String
+  phone      String?
+  notes      String?
+  mrId       String
+  mr         User     @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  status     String   @default("PENDING")
+  reviewedBy String?
+  reviewNote String?
+  reviewedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([mrId])
+  @@index([status])
+  @@index([name])
+}
+
+model PovOrder {
+  id           String   @id @default(uuid())
+  customerName String
+  productName  String
+  productSku   String?
+  quantity     Int
+  notes        String?
+  mrId         String
+  mr           User     @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  status       String   @default("PENDING")
+  reviewedBy   String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([mrId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Attendance {
+  id             String   @id @default(uuid())
+  mrId           String
+  mr             User     @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  attendanceDate DateTime
+  checkInTime    DateTime @default(now())
+  checkOutTime   DateTime?
+  checkInLat     Float?
+  checkInLng     Float?
+  checkOutLat    Float?
+  checkOutLng    Float?
+  notes          String?
+  status         String   @default("PENDING")
+  reviewedBy     String?
+  reviewNote     String?
+  reviewedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([mrId])
+  @@index([attendanceDate])
+  @@index([status])
 }

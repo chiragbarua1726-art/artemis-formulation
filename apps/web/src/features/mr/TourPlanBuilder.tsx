@@ -110,8 +110,8 @@ export const TourPlanBuilder: React.FC = () => {
 
       addToast({
         type: 'success',
-        title: 'Dermatology Tour Plan Submitted',
-        message: 'Your weekly skin clinic schedule has been sent for manager approval',
+        title: 'Tour Plan Submitted',
+        message: 'Your weekly customer schedule has been sent for manager approval',
       });
 
       queryClient.invalidateQueries({ queryKey: ['myTourPlans'] });
@@ -133,8 +133,8 @@ export const TourPlanBuilder: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dermatology Tour Plan Builder</h1>
-          <p className="text-xs text-slate-500">Plan and schedule weekly dermatologist itineraries for manager approval</p>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Tour Plan Builder</h1>
+          <p className="text-xs text-slate-500">Plan and schedule weekly customer visits for manager approval</p>
         </div>
 
         {/* Tab Switcher */}
@@ -217,7 +217,7 @@ export const TourPlanBuilder: React.FC = () => {
                 {/* Doctor Selection for this Day */}
                 <div>
                   <div className="text-[11px] font-semibold text-slate-600 mb-1.5 flex items-center justify-between">
-                    <span>Select Priority Dermatologists to Visit:</span>
+                    <span>Select priority doctors to visit:</span>
                     <span className="text-emerald-700 font-bold">
                       {dayItem.doctorIds.length} doctors selected
                     </span>
@@ -237,7 +237,7 @@ export const TourPlanBuilder: React.FC = () => {
                               : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
                           }`}
                         >
-                          {doc.name} <span className="text-[10px] opacity-75">({doc.specialty})</span>
+                          {doc.name} <span className="text-[10px] opacity-75">({doc.hospitalName})</span>
                         </button>
                       );
                     })}
@@ -254,7 +254,7 @@ export const TourPlanBuilder: React.FC = () => {
             isLoading={isSubmitting}
             className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 rounded-2xl text-sm font-bold shadow-md"
           >
-            Submit Weekly Dermatology Tour Plan for Approval
+            Submit weekly tour plan for approval
           </Button>
         </form>
       ) : (

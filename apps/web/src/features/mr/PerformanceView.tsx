@@ -116,7 +116,7 @@ export const PerformanceView: React.FC = () => {
                 <div>
                   <div className="text-xs font-bold text-slate-900">{v.doctor?.name}</div>
                   <div className="text-[11px] text-slate-500">
-                    {v.doctor?.hospitalName} • {v.doctor?.specialty}
+                    {v.doctor?.hospitalName}
                   </div>
                 </div>
                 <div className="text-right">

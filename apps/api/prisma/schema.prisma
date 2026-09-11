@@ -8,27 +8,31 @@ generator client {
 }
 
 model User {
-  id            String      @id @default(uuid())
-  name          String
-  email         String      @unique
-  passwordHash  String?
-  googleId      String?   @unique
-  emailVerified Boolean   @default(false)
-  verificationToken String? @unique
+  id                  String    @id @default(uuid())
+  name                String
+  email               String    @unique
+  passwordHash        String?
+  googleId            String?   @unique
+  emailVerified       Boolean   @default(false)
+  verificationToken   String?   @unique
   verificationExpires DateTime?
-  role          String      @default("MR") // "ADMIN" | "MANAGER" | "MR"
-  phone         String?
-  region        String?
-  managerId     String?
-  manager       User?       @relation("ManagerToMR", fields: [managerId], references: [id], onDelete: SetNull)
-  reports       User[]      @relation("ManagerToMR")
-  active        Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  role                String    @default("MR") // "ADMIN" | "MANAGER" | "MR"
+  phone               String?
+  region              String?
+  managerId           String?
+  manager             User?     @relation("ManagerToMR", fields: [managerId], references: [id], onDelete: SetNull)
+  reports             User[]    @relation("ManagerToMR")
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  visits        Visit[]
-  tourPlans     TourPlan[]
-  expenses      Expense[]
+  visits         Visit[]
+  tourPlans      TourPlan[]
+  expenses       Expense[]
+  createdDoctors Doctor[]     @relation("DoctorCreatedBy")
+  chemists       Chemist[]
+  povOrders      PovOrder[]
+  attendance     Attendance[]
 
   @@index([role])
   @@index([managerId])
@@ -36,36 +40,40 @@ model User {
 }
 
 model Doctor {
-  id           String      @id @default(uuid())
+  id           String    @id @default(uuid())
   name         String
-  specialty    String
   hospitalName String
   headquarters String?
   address      String
   latitude     Float?
   longitude    Float?
   phone        String?
-  category     String?     // e.g. "Tier A" | "Tier B" | "Tier C"
-  active       Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  active       Boolean   @default(true)
+  status       String    @default("APPROVED") // "PENDING" | "APPROVED" | "REJECTED"
+  createdById  String?
+  createdBy    User?     @relation("DoctorCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  reviewedBy   String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  visits       Visit[]
+  visits Visit[]
 
-  @@index([specialty])
-  @@index([category])
+  @@index([status])
+  @@index([createdById])
 }
 
 model Product {
-  id          String               @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String?
-  sku         String               @unique
-  category    String?              // e.g. "Cardiovascular", "Antibiotics", "Diabetes"
-  unitPrice   Float?               @default(0.0)
-  active      Boolean              @default(true)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  sku         String   @unique
+  category    String? // e.g. "Cardiovascular", "Antibiotics", "Diabetes"
+  unitPrice   Float?   @default(0.0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   discussions ProductDiscussion[]
 
@@ -83,8 +91,12 @@ model Visit {
   checkOutTime      DateTime?
   checkInLat        Float
   checkInLng        Float
+  visitDate         DateTime?
+  visitPurpose      String?
+  notes             String?
+  nextVisitDate     DateTime?
   productsDiscussed ProductDiscussion[]
-  samplesGiven      String?             // JSON stringified: [{ productId, productName, quantity }]
+  samplesGiven      String? // JSON stringified: [{ productId, productName, quantity }]
   feedback          String?
   photoUrl          String?
   createdAt         DateTime            @default(now())
@@ -111,18 +123,18 @@ model ProductDiscussion {
 }
 
 model TourPlan {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   mrId        String
-  mr          User     @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  mr          User      @relation(fields: [mrId], references: [id], onDelete: Cascade)
   weekStart   DateTime
   weekEnd     DateTime
-  planDetails String   // JSON stringified: [{ date, doctorIds: string[], area: string, notes?: string }]
-  status      String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  planDetails String // JSON stringified: [{ date, doctorIds: string[], area: string, notes?: string }]
+  status      String    @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
   reviewedBy  String?
   reviewNote  String?
   reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([mrId])
   @@index([status])
@@ -133,7 +145,7 @@ model Expense {
   id          String    @id @default(uuid())
   mrId        String
   mr          User      @relation(fields: [mrId], references: [id], onDelete: Cascade)
-  category    String    // "travel" | "food" | "lodging" | "misc"
+  category    String // "travel" | "food" | "lodging" | "misc"
   amount      Float
   receiptUrl  String?
   description String?
@@ -147,4 +159,69 @@ model Expense {
   @@index([mrId])
   @@index([status])
   @@index([category])
+}
+
+model Chemist {
+  id         String    @id @default(uuid())
+  name       String
+  address    String
+  phone      String?
+  notes      String?
+  mrId       String
+  mr         User      @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  status     String    @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  reviewedBy String?
+  reviewNote String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([mrId])
+  @@index([status])
+  @@index([name])
+}
+
+model PovOrder {
+  id           String    @id @default(uuid())
+  customerName String
+  productName  String
+  productSku   String?
+  quantity     Int
+  notes        String?
+  mrId         String
+  mr           User      @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  status       String    @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  reviewedBy   String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([mrId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Attendance {
+  id             String    @id @default(uuid())
+  mrId           String
+  mr             User      @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  attendanceDate DateTime
+  checkInTime    DateTime  @default(now())
+  checkOutTime   DateTime?
+  checkInLat     Float?
+  checkInLng     Float?
+  checkOutLat    Float?
+  checkOutLng    Float?
+  notes          String?
+  status         String    @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  reviewedBy     String?
+  reviewNote     String?
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([mrId])
+  @@index([attendanceDate])
+  @@index([status])
 }
