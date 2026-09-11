@@ -3,6 +3,19 @@ import nodemailer from 'nodemailer';
 
 const appUrl = process.env.APP_URL || 'http://localhost:5173';
 
+function createTransporter() {
+  const port = Number(process.env.SMTP_PORT || 465);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+  });
+}
+
 export function createVerificationToken() {
   return {
     token: crypto.randomBytes(32).toString('hex'),
@@ -17,12 +30,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
     return;
   }
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: Number(process.env.SMTP_PORT || 587) === 465,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
-  });
+  const transporter = createTransporter();
 
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -39,12 +47,7 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
     console.info(`[email] Password reset link for ${email}: ${resetUrl}`);
     return;
   }
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: Number(process.env.SMTP_PORT || 587) === 465,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
-  });
+  const transporter = createTransporter();
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: email,
