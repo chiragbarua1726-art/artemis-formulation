@@ -29,11 +29,6 @@ export const FieldRecords: React.FC = () => {
     queryKey: ['fieldRecords', activeTab],
     queryFn: () => apiRequest(`/${activeTab}`),
   });
-  const { data: attendanceData } = useQuery({
-    queryKey: ['myAttendance'],
-    queryFn: () => apiRequest('/attendance/me'),
-  });
-  const todayAttendance = (attendanceData?.data || []).find((item: any) => new Date(item.attendanceDate).toDateString() === new Date().toDateString());
   const records = data?.data || [];
 
   const reset = () => {
@@ -63,16 +58,6 @@ export const FieldRecords: React.FC = () => {
       addToast({ type: 'error', title: 'Could not submit record', message: error.message || 'Please try again.' });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const markAttendance = async () => {
-    try {
-      await apiRequest('/attendance', { method: 'POST', body: JSON.stringify({ notes: 'Field day started from mobile workspace.' }) });
-      addToast({ type: 'success', title: 'Attendance submitted', message: 'Your daily attendance is pending manager approval.' });
-      queryClient.invalidateQueries({ queryKey: ['myAttendance'] });
-    } catch (error: any) {
-      addToast({ type: 'error', title: 'Could not mark attendance', message: error.message || 'Please try again.' });
     }
   };
 
@@ -109,12 +94,6 @@ export const FieldRecords: React.FC = () => {
       <div>
         <h1 className="text-xl font-bold text-slate-900">Field records</h1>
         <p className="text-xs text-slate-500">Add customers and record personal orders for manager approval.</p>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-subtle">
-        <div><div className="text-sm font-bold text-slate-900">Today&apos;s attendance</div><div className="text-xs text-slate-500">{todayAttendance ? `Checked in at ${new Date(todayAttendance.checkInTime).toLocaleTimeString()}` : 'Start your field day before visiting customers.'}</div></div>
-        {!todayAttendance && <Button size="sm" onClick={markAttendance}>Mark attendance</Button>}
-        {todayAttendance && <Badge variant={todayAttendance.status === 'APPROVED' ? 'emerald' : 'amber'} size="sm">{todayAttendance.status}</Badge>}
       </div>
 
       <div className="flex gap-1 rounded-xl bg-slate-200/70 p-1 w-fit">

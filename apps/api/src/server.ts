@@ -9,7 +9,6 @@ import analyticsRoutes from './modules/analytics/analytics.routes';
 import teamRoutes from './modules/team/team.routes';
 import masterDataRoutes from './modules/masterData/masterData.routes';
 import fieldRecordsRoutes from './modules/fieldRecords/fieldRecords.routes';
-import attendanceRoutes from './modules/attendance/attendance.routes';
 import { errorHandler } from './middleware/errorHandler';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -59,7 +58,6 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/team', teamRoutes);
 app.use('/api/v1', masterDataRoutes);
 app.use('/api/v1', fieldRecordsRoutes);
-app.use('/api/v1/attendance', attendanceRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

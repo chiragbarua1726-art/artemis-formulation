@@ -17,13 +17,16 @@ const googleClient = googleClientId ? new OAuth2Client(googleClientId) : null;
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['MR', 'MANAGER']).default('MR'),
+  managerCode: z.string().optional(),
 });
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['ADMIN', 'MANAGER', 'MR']).optional(),
+  role: z.enum(['MANAGER', 'MR']).default('MR'),
+  managerCode: z.string().optional(),
   phone: z.string().optional(),
   region: z.string().optional(),
   managerId: z.string().optional().nullable(),
@@ -55,7 +58,11 @@ function generateTokens(user: { id: string; email: string; role: string }) {
 }
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = loginSchema.parse(req.body);
+  const { email, password, role, managerCode } = loginSchema.parse(req.body);
+
+  if (role === 'MANAGER' && (!process.env.MANAGER_ACCESS_CODE || managerCode !== process.env.MANAGER_ACCESS_CODE)) {
+    return res.status(401).json({ error: 'A valid manager access code is required' });
+  }
 
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
@@ -118,6 +125,10 @@ export const logout = async (_req: Request, res: Response) => {
 
 export const register = async (req: AuthenticatedRequest, res: Response) => {
   const data = registerSchema.parse(req.body);
+  const isAdminRegistration = req.user?.role === 'ADMIN';
+  if (data.role === 'MANAGER' && (!isAdminRegistration && (!process.env.MANAGER_ACCESS_CODE || data.managerCode !== process.env.MANAGER_ACCESS_CODE))) {
+    return res.status(403).json({ error: 'A valid manager access code is required to register as a manager' });
+  }
 
   const existing = await prisma.user.findUnique({
     where: { email: data.email.toLowerCase() },
@@ -135,7 +146,7 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
       name: data.name,
       email: data.email.toLowerCase(),
       passwordHash,
-      role: req.user ? (data.role || 'MR') : 'MR',
+      role: isAdminRegistration ? data.role : data.role,
       phone: data.phone,
       region: data.region,
       managerId: data.managerId || null,

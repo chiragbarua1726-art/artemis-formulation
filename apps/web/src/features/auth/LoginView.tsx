@@ -16,6 +16,7 @@ export const LoginView: React.FC = () => {
   const [name, setName] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [loginAudience, setLoginAudience] = useState<'MR' | 'MANAGER'>('MR');
+  const [managerCode, setManagerCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +72,8 @@ export const LoginView: React.FC = () => {
       const data = await apiRequest(isRegistering ? '/auth/register' : '/auth/login', {
         method: 'POST',
         body: JSON.stringify(isRegistering
-          ? { name, email: loginEmail, password: loginPass }
-          : { email: loginEmail, password: loginPass }),
+          ? { name, email: loginEmail, password: loginPass, role: loginAudience, managerCode }
+          : { email: loginEmail, password: loginPass, role: loginAudience, managerCode }),
       });
 
       if (isRegistering) {
@@ -106,12 +107,10 @@ export const LoginView: React.FC = () => {
             <Sparkle className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{isRegistering ? 'Create your account' : 'Artemis Formulation'}</h1>
-          {!isRegistering && (
-            <div className="mt-4 flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+          <div className="mt-4 flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
               <button type="button" onClick={() => setLoginAudience('MR')} className={`flex-1 rounded-lg py-2 ${loginAudience === 'MR' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>MR login</button>
               <button type="button" onClick={() => setLoginAudience('MANAGER')} className={`flex-1 rounded-lg py-2 ${loginAudience === 'MANAGER' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>Manager / Admin</button>
-            </div>
-          )}
+          </div>
           <p className="text-xs text-slate-500 mt-3">
             {isRegistering ? 'Join your dermatology field sales team' : 'Dermatology Field Sales Intelligence & Reporting System'}
           </p>
@@ -130,6 +129,13 @@ export const LoginView: React.FC = () => {
             <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name"
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
           </div>)}
+          {loginAudience === 'MANAGER' && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Manager access code</label>
+              <input type="password" required value={managerCode} onChange={(e) => setManagerCode(e.target.value)} placeholder="Enter your unique manager code"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
             <div className="relative">
