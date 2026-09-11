@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "prisma generate && tsc",
+    "build": "if [ -n \"$DATABASE_URL\" ] && [ \"$DATABASE_URL\" != \"file:./dev.db\" ]; then sed -i 's/provider = \"sqlite\"/provider = \"postgresql\"/' prisma/schema.prisma; fi && prisma generate && tsc",
     "start": "prisma db push --accept-data-loss && node dist/server.js",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate",
