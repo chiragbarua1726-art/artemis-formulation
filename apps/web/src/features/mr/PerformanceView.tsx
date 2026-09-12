@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '../../lib/api';
 import { useAuthStore } from '../../lib/authStore';
@@ -8,6 +8,8 @@ import { Award, Target, TrendingUp, CheckCircle2, Stethoscope, Package, Clock } 
 
 export const PerformanceView: React.FC = () => {
   const { user } = useAuthStore();
+  const [historyFilter, setHistoryFilter] = useState<'week' | 'month' | 'day'>('week');
+  const [selectedDay, setSelectedDay] = useState(() => new Date().toISOString().slice(0, 10));
 
   const { data: dashboardData } = useQuery({
     queryKey: ['mrDashboard'],
@@ -15,8 +17,31 @@ export const PerformanceView: React.FC = () => {
   });
 
   const { data: myVisitsData } = useQuery({
-    queryKey: ['myVisitsHistory'],
-    queryFn: () => apiRequest('/visits/me?limit=50'),
+    queryKey: ['myVisitsHistory', historyFilter, selectedDay],
+    queryFn: () => {
+      const now = new Date();
+      let from: Date;
+      let to: Date;
+
+      if (historyFilter === 'day') {
+        from = new Date(`${selectedDay}T00:00:00`);
+        to = new Date(`${selectedDay}T23:59:59.999`);
+      } else if (historyFilter === 'month') {
+        from = new Date(now.getFullYear(), now.getMonth(), 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      } else {
+        const day = now.getDay();
+        const mondayOffset = day === 0 ? -6 : 1 - day;
+        from = new Date(now);
+        from.setDate(now.getDate() + mondayOffset);
+        from.setHours(0, 0, 0, 0);
+        to = new Date(from);
+        to.setDate(from.getDate() + 6);
+        to.setHours(23, 59, 59, 999);
+      }
+
+      return apiRequest(`/visits/me?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}&limit=100`);
+    },
   });
 
   const kpis = dashboardData?.kpis || {
@@ -106,12 +131,40 @@ export const PerformanceView: React.FC = () => {
 
       {/* Field Activity Log */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-subtle space-y-3">
-        <h3 className="text-sm font-bold text-slate-900">Recent Call Detailings</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-sm font-bold text-slate-900">Visit History</h3>
+          <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1">
+            {([
+              ['week', 'This week'],
+              ['month', 'This month'],
+              ['day', 'Particular day'],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setHistoryFilter(value)}
+                className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold ${
+                  historyFilter === value ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            {historyFilter === 'day' && (
+              <input
+                type="date"
+                value={selectedDay}
+                onChange={(event) => setSelectedDay(event.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-700"
+              />
+            )}
+          </div>
+        </div>
         {completedCalls.length === 0 ? (
-          <div className="py-8 text-center text-xs text-slate-400">No visits logged yet.</div>
+          <div className="py-8 text-center text-xs text-slate-400">No visits found for this period.</div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {completedCalls.slice(0, 5).map((v: any) => (
+            {completedCalls.map((v: any) => (
               <div key={v.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between">
                 <div>
                   <div className="text-xs font-bold text-slate-900">{v.doctor?.name}</div>
