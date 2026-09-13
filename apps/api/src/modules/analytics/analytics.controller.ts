@@ -27,28 +27,14 @@ export const getDoctorCoverage = async (req: AuthenticatedRequest, res: Response
   const visitedDoctors = allDoctors.filter((d) => d.visits.length > 0);
   const coverageRatio = totalDoctors > 0 ? Math.round((visitedDoctors.length / totalDoctors) * 100) : 0;
 
-  // Breakdown by Tier
-  const tierStats: Record<string, { total: number; visited: number }> = {
-    'Tier A': { total: 0, visited: 0 },
-    'Tier B': { total: 0, visited: 0 },
-    'Tier C': { total: 0, visited: 0 },
-  };
-
   const doctorList = allDoctors.map((doc) => {
-    const tier = doc.category || 'Tier B';
-    if (!tierStats[tier]) tierStats[tier] = { total: 0, visited: 0 };
-    tierStats[tier].total += 1;
-    if (doc.visits.length > 0) tierStats[tier].visited += 1;
-
     const lastVisit = doc.visits[0] || null;
 
     return {
       id: doc.id,
       name: doc.name,
-      specialty: doc.specialty,
       hospitalName: doc.hospitalName,
       address: doc.address,
-      category: doc.category,
       totalVisits: doc.visits.length,
       lastVisitedDate: lastVisit ? lastVisit.checkInTime : null,
       lastVisitedBy: lastVisit ? lastVisit.mr.name : null,
@@ -64,7 +50,6 @@ export const getDoctorCoverage = async (req: AuthenticatedRequest, res: Response
       coveredDoctors: visitedDoctors.length,
       uncoveredDoctors: totalDoctors - visitedDoctors.length,
       coveragePercentage: coverageRatio,
-      tierStats,
     },
     doctors: doctorList,
   });

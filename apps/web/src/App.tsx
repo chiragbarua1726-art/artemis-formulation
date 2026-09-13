@@ -16,6 +16,7 @@ import { TodayPlan } from './features/mr/TodayPlan';
 import { DcrReportForm } from './features/mr/DcrReportForm';
 import { TourPlanBuilder } from './features/mr/TourPlanBuilder';
 import { PerformanceView } from './features/mr/PerformanceView';
+import { FieldRecords } from './features/mr/FieldRecords';
 
 // Manager / Admin Dashboard
 import { ManagerLayout } from './components/layout/ManagerLayout';
@@ -63,6 +64,7 @@ export const App: React.FC = () => {
               <Route path="dcr" element={<DcrReportForm />} />
               <Route path="tour-plan" element={<TourPlanBuilder />} />
               <Route path="performance" element={<PerformanceView />} />
+              <Route path="records" element={<FieldRecords />} />
             </Route>
           </Route>
 

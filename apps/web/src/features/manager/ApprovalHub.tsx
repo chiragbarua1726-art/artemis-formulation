@@ -25,7 +25,7 @@ export const ApprovalHub: React.FC = () => {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'tourPlans' | 'expenses' | 'history'>('tourPlans');
+  const [activeTab, setActiveTab] = useState<'tourPlans' | 'expenses' | 'records' | 'history'>('tourPlans');
 
   // Inspection Modals state
   const [selectedPlanForReview, setSelectedPlanForReview] = useState<any | null>(null);
@@ -45,6 +45,19 @@ export const ApprovalHub: React.FC = () => {
     queryFn: () => apiRequest('/expenses?limit=50'),
   });
 
+  const { data: doctorsData, refetch: refetchDoctors } = useQuery({
+    queryKey: ['doctorApprovals'],
+    queryFn: () => apiRequest('/doctors?status=PENDING&limit=100'),
+  });
+  const { data: chemistsData, refetch: refetchChemists } = useQuery({
+    queryKey: ['chemistApprovals'],
+    queryFn: () => apiRequest('/chemists?status=PENDING'),
+  });
+  const { data: ordersData, refetch: refetchOrders } = useQuery({
+    queryKey: ['orderApprovals'],
+    queryFn: () => apiRequest('/orders?status=PENDING'),
+  });
+
   const allPlans = tourPlansData?.data || [];
   const pendingPlans = allPlans.filter((p: any) => p.status === 'PENDING');
   const pastPlans = allPlans.filter((p: any) => p.status !== 'PENDING');
@@ -52,6 +65,25 @@ export const ApprovalHub: React.FC = () => {
   const allExpenses = expensesData?.data || [];
   const pendingExpenses = allExpenses.filter((e: any) => e.status === 'PENDING');
   const pastExpenses = allExpenses.filter((e: any) => e.status !== 'PENDING');
+  const pendingRecords = [
+    ...(doctorsData?.data || []).map((item: any) => ({ ...item, recordType: 'doctors', label: item.name })),
+    ...(chemistsData?.data || []).filter((item: any) => item.status === 'PENDING').map((item: any) => ({ ...item, recordType: 'chemists', label: item.name })),
+    ...(ordersData?.data || []).filter((item: any) => item.status === 'PENDING').map((item: any) => ({ ...item, recordType: 'orders', label: `${item.customerName} — ${item.productName}` })),
+  ];
+
+  const reviewRecord = async (record: any, action: 'approve' | 'reject') => {
+    const endpoint = record.recordType === 'doctors' ? 'doctors' : record.recordType === 'chemists' ? 'chemists' : 'orders';
+    try {
+      await apiRequest(`/${endpoint}/${record.id}/${action}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reviewNote: action === 'approve' ? 'Approved for field work.' : 'Please correct and resubmit.' }),
+      });
+      addToast({ type: 'success', title: `Record ${action}d`, message: record.label });
+      await Promise.all([refetchDoctors(), refetchChemists(), refetchOrders()]);
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Review failed', message: err.message || 'Unable to update record.' });
+    }
+  };
 
   const openReviewModal = (item: any, type: 'plan' | 'expense', action: 'approve' | 'reject') => {
     setReviewAction(action);
@@ -153,6 +185,17 @@ export const ApprovalHub: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveTab('records')}
+            className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === 'records' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Field Records</span>
+            {pendingRecords.length > 0 && <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-bold text-[10px]">{pendingRecords.length}</span>}
+          </button>
+
+          <button
             onClick={() => setActiveTab('expenses')}
             className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               activeTab === 'expenses' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
@@ -165,6 +208,7 @@ export const ApprovalHub: React.FC = () => {
                 {pendingExpenses.length}
               </span>
             )}
+
           </button>
 
           <button
@@ -328,6 +372,25 @@ export const ApprovalHub: React.FC = () => {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {activeTab === 'records' && (
+        <div className="space-y-3">
+          {pendingRecords.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+              <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
+              <div className="text-sm font-bold text-slate-900">All field records reviewed</div>
+            </div>
+          ) : pendingRecords.map((record: any) => (
+            <div key={`${record.recordType}-${record.id}`} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+              <div><div className="text-sm font-bold text-slate-900">{record.label}</div><div className="text-xs text-slate-500">{record.address || record.notes || `Quantity: ${record.quantity}`}</div></div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => reviewRecord(record, 'reject')} className="text-rose-600">Reject</Button>
+                <Button variant="primary" size="sm" onClick={() => reviewRecord(record, 'approve')} className="bg-emerald-600 hover:bg-emerald-700">Approve</Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

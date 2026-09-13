@@ -24,10 +24,9 @@ export const TodayPlan: React.FC = () => {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [selectedDoctorForCheckin, setSelectedDoctorForCheckin] = useState<Doctor | null>(null);
   const [showAddDoctor, setShowAddDoctor] = useState(false);
-  const [newDoctor, setNewDoctor] = useState({ name: '', hospitalName: '', headquarters: '', specialty: 'Dermatology', address: '' });
+  const [newDoctor, setNewDoctor] = useState({ name: '', hospitalName: '', headquarters: '', address: '' });
   const [isAddingDoctor, setIsAddingDoctor] = useState(false);
 
   // Fetch MR Dashboard metrics
@@ -38,14 +37,8 @@ export const TodayPlan: React.FC = () => {
 
   // Fetch Doctors directory for territory
   const { data: doctorsData, isLoading: isLoadingDoctors } = useQuery({
-    queryKey: ['doctors', search, selectedSpecialty],
-    queryFn: () => {
-      let url = `/doctors?search=${encodeURIComponent(search)}`;
-      if (selectedSpecialty !== 'All') {
-        url += `&specialty=${encodeURIComponent(selectedSpecialty)}`;
-      }
-      return apiRequest(url);
-    },
+    queryKey: ['doctors', search],
+    queryFn: () => apiRequest(`/doctors?search=${encodeURIComponent(search)}`),
   });
 
   // Fetch Today's Visits for this MR
@@ -59,17 +52,6 @@ export const TodayPlan: React.FC = () => {
   const visitedDoctorIds = new Set(
     completedVisits.filter((v: any) => v.checkOutTime !== null).map((v: any) => v.doctorId)
   );
-
-  const specialties = [
-    'All',
-    'Aesthetic Dermatology & Cosmetology',
-    'Clinical Dermatology & Acne Specialist',
-    'Laser & Pigmentation Specialist',
-    'Trichology & Hair Restoration',
-    'Psoriasis & Atopic Eczema Care',
-    'Pediatric Dermatology',
-    'Dermatosurgery & Mohs Surgery',
-  ];
 
   const kpis = dashboardData?.kpis || {
     visitsThisWeek: 3,
@@ -90,7 +72,7 @@ export const TodayPlan: React.FC = () => {
     try {
       await apiRequest('/doctors', { method: 'POST', body: JSON.stringify(newDoctor) });
       addToast({ type: 'success', title: 'Doctor added', message: `${newDoctor.name} is ready for a visit.` });
-      setNewDoctor({ name: '', hospitalName: '', headquarters: '', specialty: 'Dermatology', address: '' });
+      setNewDoctor({ name: '', hospitalName: '', headquarters: '', address: '' });
       setShowAddDoctor(false);
       refetchVisits();
       // The query key includes the search/filter, so invalidate all doctor lists.
@@ -107,7 +89,7 @@ export const TodayPlan: React.FC = () => {
       {/* Header Greeting */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Today's Derma Detailing Plan</h1>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Today's Field Plan</h1>
           <p className="text-xs text-slate-500">
             {user?.region} • Artemis Formulations Scheduled Clinics
           </p>
@@ -186,7 +168,7 @@ export const TodayPlan: React.FC = () => {
             <span>Doctors & Clinics</span>
             <span className="text-xs font-normal text-slate-400">({doctors.length} in area)</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-1">Choose a doctor or add the doctor you visited today.</p>
+          <p className="text-xs text-slate-500 mt-1">Choose a doctor or add a customer you visited today.</p>
           </div>
           <Button size="sm" variant="outline" onClick={() => setShowAddDoctor(!showAddDoctor)}>
             + Add doctor
@@ -201,7 +183,6 @@ export const TodayPlan: React.FC = () => {
                 ['name', 'Doctor name', 'Dr. Anil Sharma'],
                 ['hospitalName', 'Clinic / hospital', 'Skin Care Clinic'],
                 ['headquarters', 'Headquarters / territory', 'North Delhi'],
-                ['specialty', 'Specialty', 'Dermatology'],
                 ['address', 'Clinic address', 'Sector, street, city'],
               ].map(([key, label, placeholder]) => (
                 <input key={key} required value={newDoctor[key as keyof typeof newDoctor]}
@@ -225,39 +206,23 @@ export const TodayPlan: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search dermatologists, skin clinic, or sub-specialty..."
+              placeholder="Search doctors, clinics, or territory..."
               className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm transition-all"
             />
           </div>
 
-          {/* Specialty Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-            {specialties.map((spec) => (
-              <button
-                key={spec}
-                onClick={() => setSelectedSpecialty(spec)}
-                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                  selectedSpecialty === spec
-                    ? 'bg-blue-600 text-white font-semibold shadow-sm'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {spec}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Doctor Cards List */}
         {isLoadingDoctors ? (
           <div className="py-12 text-center text-xs text-slate-400">
-            Loading dermatologist directory...
+            Loading customer directory...
           </div>
         ) : doctors.length === 0 ? (
           <div className="py-12 text-center bg-white rounded-2xl border border-slate-200 p-6">
             <Sparkle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <div className="text-sm font-semibold text-slate-700">No dermatologists match your filter</div>
-            <p className="text-xs text-slate-400 mt-1">Try searching for a different clinic or sub-specialty</p>
+            <div className="text-sm font-semibold text-slate-700">No doctors match your filter</div>
+            <p className="text-xs text-slate-400 mt-1">Try searching for a different clinic or territory</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
@@ -277,21 +242,9 @@ export const TodayPlan: React.FC = () => {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="text-sm font-bold text-slate-900 truncate">{doc.name}</h3>
-                          <Badge
-                            variant={
-                              doc.category === 'Tier A'
-                                ? 'blue'
-                                : doc.category === 'Tier B'
-                                ? 'slate'
-                                : 'slate'
-                            }
-                            size="sm"
-                          >
-                            {doc.category || 'Tier B'}
-                          </Badge>
                         </div>
                         <p className="text-xs font-semibold text-blue-800 mt-0.5">
-                          {doc.specialty}
+                          {doc.hospitalName}
                         </p>
                         <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-1">
                           <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />

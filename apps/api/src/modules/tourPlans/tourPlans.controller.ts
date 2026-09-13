@@ -129,6 +129,9 @@ export const approveTourPlan = async (req: AuthenticatedRequest, res: Response) 
   if (!plan) {
     return res.status(404).json({ error: 'Tour plan not found' });
   }
+  if (req.user!.role === 'MANAGER' && plan.mr.managerId !== req.user!.id) {
+    return res.status(403).json({ error: 'Forbidden: Tour plan is outside your team' });
+  }
 
   const updated = await prisma.tourPlan.update({
     where: { id },
@@ -156,9 +159,12 @@ export const rejectTourPlan = async (req: AuthenticatedRequest, res: Response) =
   const { id } = req.params;
   const { reviewNote } = reviewSchema.parse(req.body);
 
-  const plan = await prisma.tourPlan.findUnique({ where: { id } });
+  const plan = await prisma.tourPlan.findUnique({ where: { id }, include: { mr: true } });
   if (!plan) {
     return res.status(404).json({ error: 'Tour plan not found' });
+  }
+  if (req.user!.role === 'MANAGER' && plan.mr.managerId !== req.user!.id) {
+    return res.status(403).json({ error: 'Forbidden: Tour plan is outside your team' });
   }
 
   const updated = await prisma.tourPlan.update({

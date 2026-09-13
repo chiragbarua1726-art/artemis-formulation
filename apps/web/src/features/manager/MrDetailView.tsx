@@ -129,7 +129,7 @@ export const MrDetailView: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    {v.doctor?.hospitalName} • {v.doctor?.specialty}
+                    {v.doctor?.hospitalName}
                   </div>
                   {v.feedback && (
                     <div className="text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded-lg mt-1">

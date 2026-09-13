@@ -4,6 +4,7 @@ import { useAuthStore } from '../../lib/authStore';
 import {
   Calendar,
   ClipboardList,
+  Users,
   MapPin,
   Award,
   LogOut,
@@ -35,6 +36,7 @@ export const MrLayout: React.FC = () => {
   const navItems = [
     { to: '/mr/today', label: "Today's Plan", icon: Calendar },
     { to: '/mr/dcr', label: 'DCR', icon: ClipboardList, badge: activeVisit ? 'Active' : null },
+    { to: '/mr/records', label: 'Records', icon: Users },
     { to: '/mr/tour-plan', label: 'Tour Plan', icon: MapPin },
     { to: '/mr/performance', label: 'My Stats', icon: Award },
   ];
