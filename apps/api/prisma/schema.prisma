@@ -38,7 +38,7 @@ model User {
 model Doctor {
   id           String      @id @default(uuid())
   name         String
-  specialty    String
+  specialty    String?
   hospitalName String
   headquarters String?
   address      String
