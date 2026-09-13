@@ -29,7 +29,13 @@ app.use('/api/v1/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standa
 // CORS configuration
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173', process.env.CORS_ORIGIN || 'http://localhost:5173'],
+    origin: [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'https://artemisformulation.in',
+      'https://www.artemisformulation.in',
+      process.env.CORS_ORIGIN || 'http://localhost:5173',
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
